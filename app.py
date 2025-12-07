@@ -142,16 +142,21 @@ def main():
     st.title("🤖 Multi AI Chat")
     st.markdown("**Один запрос — ответы от 10 лучших нейросетей**")
 
+    # Получаем API ключ из secrets (приоритет) или из ввода
+    api_key = st.secrets.get("OPENROUTER_SECRET_KEY", "")
+
     # Sidebar с настройками
     with st.sidebar:
         st.header("⚙️ Настройки")
 
-        api_key = st.text_input(
-            "OpenRouter API Key",
-            type="password",
-            key="OPENROUTER_SECRET_KEY",
-            help="Получите ключ на https://openrouter.ai/keys"
-        )
+        if api_key:
+            st.success("✅ API ключ загружен из secrets")
+        else:
+            api_key = st.text_input(
+                "OpenRouter API Key",
+                type="password",
+                help="Получите ключ на https://openrouter.ai/keys"
+            )
 
         st.markdown("---")
         st.subheader("📋 Выбор моделей")
