@@ -9,20 +9,20 @@ Streamlit приложение для сравнения ответов от т�
 - Выбор моделей для сравнения
 - Статистика времени ответа
 
-## Модели
+## Модели (по MMLU-Pro рейтингу)
 
-| Модель | Провайдер |
-|--------|-----------|
-| Claude Sonnet 4 | Anthropic |
-| GPT-4o | OpenAI |
-| Gemini 2.0 Flash | Google |
-| Claude 3.5 Haiku | Anthropic |
-| Llama 3.3 70B | Meta |
-| DeepSeek R1 | DeepSeek |
-| Mistral Large | Mistral AI |
-| Qwen 2.5 72B | Alibaba |
-| Command R+ | Cohere |
-| Grok 2 | xAI |
+| # | Модель | Провайдер | Score |
+|---|--------|-----------|-------|
+| 1 | Gemini 2.5 Pro Preview | Google | 90% |
+| 2 | Claude Opus 4 | Anthropic | 90% |
+| 3 | Claude Sonnet 4 | Anthropic | 88% |
+| 4 | GPT-4.1 | OpenAI | 87% |
+| 5 | Grok 3 | xAI | 87% |
+| 6 | DeepSeek V3 | DeepSeek | 86% |
+| 7 | Codex Mini | OpenAI | 86% |
+| 8 | DeepSeek R1 | DeepSeek | 85% |
+| 9 | Kimi K2 | Moonshot | 85% |
+| 10 | Qwen3 235B | Alibaba | 84% |
 
 ## Установка
 

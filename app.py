@@ -5,57 +5,67 @@ import aiohttp
 from concurrent.futures import ThreadPoolExecutor
 import time
 
-# Топ-10 самых передовых текстовых моделей (декабрь 2024)
+# Топ-10 моделей по MMLU-Pro (Reasoning & Knowledge) - декабрь 2024
 TOP_MODELS = [
+    {
+        "id": "google/gemini-2.5-pro-preview-05-06",
+        "name": "Gemini 2.5 Pro Preview",
+        "provider": "Google",
+        "score": "90%"
+    },
+    {
+        "id": "anthropic/claude-opus-4",
+        "name": "Claude Opus 4",
+        "provider": "Anthropic",
+        "score": "90%"
+    },
     {
         "id": "anthropic/claude-sonnet-4",
         "name": "Claude Sonnet 4",
-        "provider": "Anthropic"
+        "provider": "Anthropic",
+        "score": "88%"
     },
     {
-        "id": "openai/gpt-4o",
-        "name": "GPT-4o",
-        "provider": "OpenAI"
+        "id": "openai/gpt-4.1",
+        "name": "GPT-4.1",
+        "provider": "OpenAI",
+        "score": "87%"
     },
     {
-        "id": "google/gemini-2.0-flash-001",
-        "name": "Gemini 2.0 Flash",
-        "provider": "Google"
+        "id": "x-ai/grok-3",
+        "name": "Grok 3",
+        "provider": "xAI",
+        "score": "87%"
     },
     {
-        "id": "anthropic/claude-3.5-haiku",
-        "name": "Claude 3.5 Haiku",
-        "provider": "Anthropic"
+        "id": "deepseek/deepseek-chat",
+        "name": "DeepSeek V3",
+        "provider": "DeepSeek",
+        "score": "86%"
     },
     {
-        "id": "meta-llama/llama-3.3-70b-instruct",
-        "name": "Llama 3.3 70B",
-        "provider": "Meta"
+        "id": "openai/codex-mini",
+        "name": "Codex Mini",
+        "provider": "OpenAI",
+        "score": "86%"
     },
     {
         "id": "deepseek/deepseek-r1",
         "name": "DeepSeek R1",
-        "provider": "DeepSeek"
+        "provider": "DeepSeek",
+        "score": "85%"
     },
     {
-        "id": "mistralai/mistral-large-2411",
-        "name": "Mistral Large",
-        "provider": "Mistral AI"
+        "id": "moonshotai/kimi-k2",
+        "name": "Kimi K2",
+        "provider": "Moonshot",
+        "score": "85%"
     },
     {
-        "id": "qwen/qwen-2.5-72b-instruct",
-        "name": "Qwen 2.5 72B",
-        "provider": "Alibaba"
-    },
-    {
-        "id": "cohere/command-r-plus",
-        "name": "Command R+",
-        "provider": "Cohere"
-    },
-    {
-        "id": "x-ai/grok-2-1212",
-        "name": "Grok 2",
-        "provider": "xAI"
+        "id": "qwen/qwen3-235b-a22b",
+        "name": "Qwen3 235B",
+        "provider": "Alibaba",
+        "score": "84%"
     },
 ]
 
@@ -149,7 +159,7 @@ def main():
         selected_models = []
         for model in TOP_MODELS:
             if st.checkbox(
-                f"{model['name']} ({model['provider']})",
+                f"{model['name']} ({model['provider']}) - {model['score']}",
                 value=True,
                 key=f"model_{model['id']}"
             ):
