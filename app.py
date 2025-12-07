@@ -6,67 +6,67 @@ import pandas as pd
 from io import BytesIO
 from datetime import datetime
 
-# Топ-10 моделей по MMLU-Pro (Reasoning & Knowledge)
+# Топ-10 Thinking моделей (с расширенным рассуждением)
 TOP_MODELS = [
     {
+        "id": "openai/o3",
+        "name": "OpenAI o3",
+        "provider": "OpenAI",
+        "score": "92%"
+    },
+    {
         "id": "google/gemini-2.5-pro-preview-06-05",
-        "name": "Gemini 3 Pro Preview",
+        "name": "Gemini 2.5 Pro Thinking",
         "provider": "Google",
         "score": "90%"
     },
     {
-        "id": "anthropic/claude-opus-4",
-        "name": "Claude Opus 4.5",
-        "provider": "Anthropic",
+        "id": "openai/o4-mini",
+        "name": "OpenAI o4-mini",
+        "provider": "OpenAI",
         "score": "90%"
     },
     {
-        "id": "anthropic/claude-sonnet-4",
-        "name": "Claude 4.5 Sonnet",
-        "provider": "Anthropic",
-        "score": "88%"
-    },
-    {
-        "id": "openai/gpt-4.1",
-        "name": "GPT-5.1",
-        "provider": "OpenAI",
-        "score": "87%"
-    },
-    {
-        "id": "x-ai/grok-3-beta",
-        "name": "Grok 4",
-        "provider": "xAI",
-        "score": "87%"
-    },
-    {
-        "id": "deepseek/deepseek-chat",
-        "name": "DeepSeek V3.2",
+        "id": "deepseek/deepseek-r1",
+        "name": "DeepSeek R1",
         "provider": "DeepSeek",
-        "score": "86%"
-    },
-    {
-        "id": "openai/codex-mini",
-        "name": "GPT-5.1 Codex",
-        "provider": "OpenAI",
-        "score": "86%"
-    },
-    {
-        "id": "x-ai/grok-3-mini-beta",
-        "name": "Grok 4.1 Fast",
-        "provider": "xAI",
-        "score": "85%"
+        "score": "88%"
     },
     {
         "id": "deepseek/deepseek-r1-0528",
         "name": "DeepSeek R1 0528",
         "provider": "DeepSeek",
-        "score": "85%"
+        "score": "87%"
+    },
+    {
+        "id": "qwen/qwq-32b",
+        "name": "Qwen QwQ 32B",
+        "provider": "Alibaba",
+        "score": "86%"
     },
     {
         "id": "moonshotai/kimi-k2",
         "name": "Kimi K2 Thinking",
         "provider": "Moonshot",
         "score": "85%"
+    },
+    {
+        "id": "perplexity/sonar-reasoning-pro",
+        "name": "Sonar Reasoning Pro",
+        "provider": "Perplexity",
+        "score": "85%"
+    },
+    {
+        "id": "google/gemini-2.5-flash-preview-05-20",
+        "name": "Gemini 2.5 Flash Thinking",
+        "provider": "Google",
+        "score": "84%"
+    },
+    {
+        "id": "anthropic/claude-sonnet-4",
+        "name": "Claude Sonnet 4 Thinking",
+        "provider": "Anthropic",
+        "score": "84%"
     },
 ]
 
@@ -183,8 +183,8 @@ def main():
         layout="wide"
     )
 
-    st.title("🤖 Multi AI Chat")
-    st.markdown("**Один запрос — ответы от 10 лучших нейросетей → Excel**")
+    st.title("🧠 Multi AI Thinking")
+    st.markdown("**Один запрос — ответы от 10 лучших думающих нейросетей → Excel**")
 
     # Получаем API ключ из secrets (приоритет) или из ввода
     api_key = st.secrets.get("OPENROUTER_SECRET_KEY", "")
