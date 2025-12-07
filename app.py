@@ -5,67 +5,67 @@ import aiohttp
 from concurrent.futures import ThreadPoolExecutor
 import time
 
-# Топ-10 моделей по MMLU-Pro (Reasoning & Knowledge) - декабрь 2024
+# Топ-10 моделей по MMLU-Pro (Reasoning & Knowledge)
 TOP_MODELS = [
     {
-        "id": "google/gemini-2.5-pro-preview-05-06",
-        "name": "Gemini 2.5 Pro Preview",
+        "id": "google/gemini-2.5-pro-preview-06-05",
+        "name": "Gemini 3 Pro Preview",
         "provider": "Google",
         "score": "90%"
     },
     {
         "id": "anthropic/claude-opus-4",
-        "name": "Claude Opus 4",
+        "name": "Claude Opus 4.5",
         "provider": "Anthropic",
         "score": "90%"
     },
     {
         "id": "anthropic/claude-sonnet-4",
-        "name": "Claude Sonnet 4",
+        "name": "Claude 4.5 Sonnet",
         "provider": "Anthropic",
         "score": "88%"
     },
     {
         "id": "openai/gpt-4.1",
-        "name": "GPT-4.1",
+        "name": "GPT-5.1",
         "provider": "OpenAI",
         "score": "87%"
     },
     {
-        "id": "x-ai/grok-3",
-        "name": "Grok 3",
+        "id": "x-ai/grok-3-beta",
+        "name": "Grok 4",
         "provider": "xAI",
         "score": "87%"
     },
     {
         "id": "deepseek/deepseek-chat",
-        "name": "DeepSeek V3",
+        "name": "DeepSeek V3.2",
         "provider": "DeepSeek",
         "score": "86%"
     },
     {
         "id": "openai/codex-mini",
-        "name": "Codex Mini",
+        "name": "GPT-5.1 Codex",
         "provider": "OpenAI",
         "score": "86%"
     },
     {
-        "id": "deepseek/deepseek-r1",
-        "name": "DeepSeek R1",
+        "id": "x-ai/grok-3-mini-beta",
+        "name": "Grok 4.1 Fast",
+        "provider": "xAI",
+        "score": "85%"
+    },
+    {
+        "id": "deepseek/deepseek-r1-0528",
+        "name": "DeepSeek R1 0528",
         "provider": "DeepSeek",
         "score": "85%"
     },
     {
         "id": "moonshotai/kimi-k2",
-        "name": "Kimi K2",
+        "name": "Kimi K2 Thinking",
         "provider": "Moonshot",
         "score": "85%"
-    },
-    {
-        "id": "qwen/qwen3-235b-a22b",
-        "name": "Qwen3 235B",
-        "provider": "Alibaba",
-        "score": "84%"
     },
 ]
 
@@ -142,6 +142,46 @@ def main():
     st.title("🤖 Multi AI Chat")
     st.markdown("**Один запрос — ответы от 10 лучших нейросетей**")
 
+    # CSS для горизонтальной прокрутки столбцов
+    st.markdown("""
+    <style>
+    .horizontal-scroll {
+        display: flex;
+        overflow-x: auto;
+        gap: 1rem;
+        padding: 1rem 0;
+    }
+    .model-card {
+        min-width: 350px;
+        max-width: 350px;
+        background: #f0f2f6;
+        border-radius: 10px;
+        padding: 1rem;
+        flex-shrink: 0;
+    }
+    .model-card h4 {
+        margin: 0 0 0.5rem 0;
+        color: #1f1f1f;
+    }
+    .model-card .provider {
+        font-size: 0.8rem;
+        color: #666;
+        margin-bottom: 0.5rem;
+    }
+    .model-card .content {
+        font-size: 0.9rem;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .model-card.error {
+        background: #ffe6e6;
+    }
+    .model-card.loading {
+        background: #fff3cd;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
     # Получаем API ключ из secrets (приоритет) или из ввода
     api_key = st.secrets.get("OPENROUTER_SECRET_KEY", "")
 
@@ -206,22 +246,22 @@ def main():
 
         st.markdown("---")
         st.subheader("📊 Ответы моделей")
+        st.caption("← Прокручивайте вправо для просмотра всех ответов →")
 
         # Создаем контейнеры для каждой модели
         results = {}
         containers = {}
 
-        # Создаем сетку для отображения результатов
-        cols = st.columns(2)
+        # Создаем горизонтальную сетку - все модели в одной строке
+        cols = st.columns(len(selected_models))
 
         for idx, model in enumerate(selected_models):
-            col = cols[idx % 2]
-            with col:
+            with cols[idx]:
                 with st.container(border=True):
-                    st.markdown(f"### {model['name']}")
-                    st.caption(f"Provider: {model['provider']} | Model: `{model['id']}`")
+                    st.markdown(f"**{model['name']}**")
+                    st.caption(f"{model['provider']} | {model['score']}")
                     containers[model['id']] = st.empty()
-                    containers[model['id']].info("⏳ Ожидание ответа...")
+                    containers[model['id']].info("⏳ Ожидание...")
 
         if parallel:
             # Параллельное выполнение запросов
