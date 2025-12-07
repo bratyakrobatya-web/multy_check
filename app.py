@@ -1,9 +1,10 @@
 import streamlit as st
 import requests
-import asyncio
-import aiohttp
 from concurrent.futures import ThreadPoolExecutor
 import time
+import pandas as pd
+from io import BytesIO
+from datetime import datetime
 
 # Топ-10 моделей по MMLU-Pro (Reasoning & Knowledge)
 TOP_MODELS = [
@@ -132,6 +133,49 @@ def query_model(model_id: str, prompt: str, api_key: str) -> dict:
         }
 
 
+def create_excel(prompt: str, results: dict, selected_models: list) -> BytesIO:
+    """Создает Excel файл с результатами"""
+    output = BytesIO()
+
+    # Формируем данные для Excel - каждая модель в отдельном столбце
+    data = {"Запрос": [prompt]}
+
+    for model in selected_models:
+        model_id = model['id']
+        col_name = f"{model['name']}\n({model['provider']})"
+
+        if model_id in results:
+            result = results[model_id]
+            if result['success']:
+                data[col_name] = [result['content']]
+            else:
+                data[col_name] = [f"ОШИБКА: {result.get('error', 'Неизвестная ошибка')}"]
+        else:
+            data[col_name] = ["Нет данных"]
+
+    df = pd.DataFrame(data)
+
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Ответы AI')
+
+        # Настраиваем ширину столбцов
+        worksheet = writer.sheets['Ответы AI']
+        worksheet.column_dimensions['A'].width = 50  # Запрос
+
+        for idx, col in enumerate(df.columns[1:], start=2):
+            col_letter = chr(64 + idx)
+            worksheet.column_dimensions[col_letter].width = 60
+
+        # Включаем перенос текста для всех ячеек
+        from openpyxl.styles import Alignment
+        for row in worksheet.iter_rows():
+            for cell in row:
+                cell.alignment = Alignment(wrap_text=True, vertical='top')
+
+    output.seek(0)
+    return output
+
+
 def main():
     st.set_page_config(
         page_title="Multi AI Chat",
@@ -140,47 +184,7 @@ def main():
     )
 
     st.title("🤖 Multi AI Chat")
-    st.markdown("**Один запрос — ответы от 10 лучших нейросетей**")
-
-    # CSS для горизонтальной прокрутки столбцов
-    st.markdown("""
-    <style>
-    .horizontal-scroll {
-        display: flex;
-        overflow-x: auto;
-        gap: 1rem;
-        padding: 1rem 0;
-    }
-    .model-card {
-        min-width: 350px;
-        max-width: 350px;
-        background: #f0f2f6;
-        border-radius: 10px;
-        padding: 1rem;
-        flex-shrink: 0;
-    }
-    .model-card h4 {
-        margin: 0 0 0.5rem 0;
-        color: #1f1f1f;
-    }
-    .model-card .provider {
-        font-size: 0.8rem;
-        color: #666;
-        margin-bottom: 0.5rem;
-    }
-    .model-card .content {
-        font-size: 0.9rem;
-        max-height: 400px;
-        overflow-y: auto;
-    }
-    .model-card.error {
-        background: #ffe6e6;
-    }
-    .model-card.loading {
-        background: #fff3cd;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+    st.markdown("**Один запрос — ответы от 10 лучших нейросетей → Excel**")
 
     # Получаем API ключ из secrets (приоритет) или из ввода
     api_key = st.secrets.get("OPENROUTER_SECRET_KEY", "")
@@ -190,7 +194,7 @@ def main():
         st.header("⚙️ Настройки")
 
         if api_key:
-            st.success("✅ API ключ загружен из secrets")
+            st.success("✅ API ключ загружен")
         else:
             api_key = st.text_input(
                 "OpenRouter API Key",
@@ -213,7 +217,7 @@ def main():
         st.markdown("---")
         st.markdown("""
         ### 📖 О приложении
-        Это приложение позволяет сравнить ответы разных AI-моделей на один и тот же вопрос.
+        Ответы выгружаются в Excel с удобными столбцами.
 
         **API:** [OpenRouter](https://openrouter.ai)
         """)
@@ -225,11 +229,7 @@ def main():
         placeholder="Например: Объясни квантовые вычисления простыми словами"
     )
 
-    col1, col2 = st.columns([1, 5])
-    with col1:
-        send_button = st.button("🚀 Отправить", type="primary", use_container_width=True)
-    with col2:
-        parallel = st.checkbox("Параллельные запросы", value=True, help="Отправлять запросы ко всем моделям одновременно")
+    send_button = st.button("🚀 Отправить и скачать Excel", type="primary", use_container_width=True)
 
     if send_button:
         if not api_key:
@@ -244,72 +244,74 @@ def main():
             st.error("❌ Пожалуйста, выберите хотя бы одну модель")
             return
 
-        st.markdown("---")
-        st.subheader("📊 Ответы моделей")
-        st.caption("← Прокручивайте вправо для просмотра всех ответов →")
+        # Прогресс
+        progress_bar = st.progress(0)
+        status_text = st.empty()
 
-        # Создаем контейнеры для каждой модели
         results = {}
-        containers = {}
 
-        # Создаем горизонтальную сетку - все модели в одной строке
-        cols = st.columns(len(selected_models))
+        # Параллельное выполнение запросов
+        status_text.text("⏳ Отправляю запросы ко всем моделям...")
 
-        for idx, model in enumerate(selected_models):
-            with cols[idx]:
-                with st.container(border=True):
-                    st.markdown(f"**{model['name']}**")
-                    st.caption(f"{model['provider']} | {model['score']}")
-                    containers[model['id']] = st.empty()
-                    containers[model['id']].info("⏳ Ожидание...")
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = {
+                executor.submit(query_model, model['id'], prompt, api_key): model
+                for model in selected_models
+            }
 
-        if parallel:
-            # Параллельное выполнение запросов
-            with ThreadPoolExecutor(max_workers=10) as executor:
-                futures = {
-                    executor.submit(query_model, model['id'], prompt, api_key): model
-                    for model in selected_models
-                }
-
-                for future in futures:
-                    model = futures[future]
-                    result = future.result()
-                    results[model['id']] = result
-
-                    # Обновляем контейнер с результатом
-                    if result['success']:
-                        containers[model['id']].markdown(result['content'])
-                        st.toast(f"✅ {model['name']} ответил за {result['time']:.1f}с")
-                    else:
-                        containers[model['id']].error(f"❌ {result['error']}")
-        else:
-            # Последовательное выполнение
-            progress = st.progress(0)
-            for idx, model in enumerate(selected_models):
-                result = query_model(model['id'], prompt, api_key)
+            completed = 0
+            for future in futures:
+                model = futures[future]
+                result = future.result()
                 results[model['id']] = result
+                completed += 1
+                progress_bar.progress(completed / len(selected_models))
 
                 if result['success']:
-                    containers[model['id']].markdown(result['content'])
+                    status_text.text(f"✅ {model['name']} ответил ({completed}/{len(selected_models)})")
                 else:
-                    containers[model['id']].error(f"❌ {result['error']}")
+                    status_text.text(f"❌ {model['name']} ошибка ({completed}/{len(selected_models)})")
 
-                progress.progress((idx + 1) / len(selected_models))
-            progress.empty()
+        progress_bar.empty()
+        status_text.empty()
 
         # Статистика
-        st.markdown("---")
-        st.subheader("📈 Статистика")
-
         successful = sum(1 for r in results.values() if r['success'])
         failed = len(results) - successful
-        avg_time = sum(r['time'] for r in results.values() if r['success']) / max(successful, 1)
 
-        stat_cols = st.columns(4)
-        stat_cols[0].metric("✅ Успешно", successful)
-        stat_cols[1].metric("❌ Ошибки", failed)
-        stat_cols[2].metric("⏱️ Среднее время", f"{avg_time:.1f}с")
-        stat_cols[3].metric("📊 Всего моделей", len(results))
+        col1, col2, col3 = st.columns(3)
+        col1.metric("✅ Успешно", successful)
+        col2.metric("❌ Ошибки", failed)
+        col3.metric("📊 Всего", len(results))
+
+        # Создаем Excel
+        excel_file = create_excel(prompt, results, selected_models)
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"ai_responses_{timestamp}.xlsx"
+
+        st.download_button(
+            label="📥 Скачать Excel",
+            data=excel_file,
+            file_name=filename,
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            type="primary",
+            use_container_width=True
+        )
+
+        # Превью результатов
+        st.markdown("---")
+        st.subheader("👀 Превью ответов")
+
+        for model in selected_models:
+            model_id = model['id']
+            if model_id in results:
+                result = results[model_id]
+                with st.expander(f"{model['name']} ({model['provider']})"):
+                    if result['success']:
+                        st.markdown(result['content'])
+                    else:
+                        st.error(result.get('error', 'Ошибка'))
 
 
 if __name__ == "__main__":
